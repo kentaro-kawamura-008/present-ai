@@ -1,37 +1,67 @@
+"""
+Mock Google Cloud Storage (GCS) client for local development and testing.
+
+This module provides a `MockGCSClient` class that simulates basic GCS
+operations like uploading and downloading blobs (as strings) using an
+in-memory dictionary as storage. It also provides mock `Bucket` and `Blob`
+objects with a limited set of methods (`exists`, `upload_from_string`,
+`download_as_string`) to mimic the behavior of the actual Google Cloud
+Storage client library.
+
+This is useful for testing application logic that interacts with GCS without
+requiring actual GCS access or credentials, especially in automated tests
+or local UI development.
+"""
 import logging
+
+# Configure logger for this module
+logger = logging.getLogger(__name__)
 
 class MockGCSClient:
     """
     A mock Google Cloud Storage client for local development and testing.
-    Simulates file uploads and reads using an in-memory dictionary.
+
+    Simulates file uploads and reads using an in-memory dictionary. This client
+    primarily works with string data for simplicity, which is suitable for
+    applications where file content is treated as text or can be represented
+    as such for mocking purposes (e.g., mock presentation content).
     """
     def __init__(self):
-        self._storage = {}  # In-memory store: { "bucket_name/blob_name": "file_content_string" }
-        logging.basicConfig(level=logging.INFO)
-        self.logger = logging.getLogger(__name__)
+        """Initializes the MockGCSClient with an empty in-memory storage."""
+        self._storage: Dict[str, str] = {}  # In-memory store: { "bucket_name/blob_name": "file_content_string" }
+        # BasicConfig is called here to ensure logs are visible if this client is used standalone
+        # or before application-wide logging is configured. It's safe if already configured.
+        if not logging.getLogger().hasHandlers(): # Check if root logger has handlers
+            logging.basicConfig(level=logging.INFO)
+        # self.logger = logging.getLogger(__name__) # Using module-level logger
 
     def _get_full_path(self, blob_name: str, bucket_name: str) -> str:
+        """Constructs the full path key used for in-memory storage."""
         return f"{bucket_name}/{blob_name}"
 
     def upload_blob_from_string(self, blob_name: str, data_string: str, bucket_name: str = 'mock_bucket'):
         """
         Simulates uploading a string as a blob to a GCS bucket.
 
+        The data is stored in an in-memory dictionary.
+
         Args:
-            blob_name (str): The name of the blob (file path within the bucket).
-            data_string (str): The string content of the file.
+            blob_name (str): The name of the blob (simulating file path within the bucket).
+            data_string (str): The string content of the "file".
             bucket_name (str, optional): The name of the bucket. Defaults to 'mock_bucket'.
         """
         full_path = self._get_full_path(blob_name, bucket_name)
         self._storage[full_path] = data_string
-        self.logger.info(f"MockGCS: Uploaded '{full_path}' ({len(data_string)} bytes)")
+        logger.info(f"MockGCS: Uploaded '{full_path}' ({len(data_string)} bytes)")
 
     def download_blob_to_string(self, blob_name: str, bucket_name: str = 'mock_bucket') -> str:
         """
         Simulates downloading a blob from GCS as a string.
 
+        Retrieves data from the in-memory storage.
+
         Args:
-            blob_name (str): The name of the blob (file path within the bucket).
+            blob_name (str): The name of the blob.
             bucket_name (str, optional): The name of the bucket. Defaults to 'mock_bucket'.
 
         Returns:
@@ -42,62 +72,120 @@ class MockGCSClient:
         """
         full_path = self._get_full_path(blob_name, bucket_name)
         if full_path not in self._storage:
-            self.logger.error(f"MockGCS: File not found '{full_path}'")
+            logger.error(f"MockGCS: File not found '{full_path}'")
             raise FileNotFoundError(f"MockGCS: Blob '{full_path}' not found in mock storage.")
 
         content = self._storage[full_path]
-        self.logger.info(f"MockGCS: Downloaded '{full_path}' ({len(content)} bytes)")
+        logger.info(f"MockGCS: Downloaded '{full_path}' ({len(content)} bytes)")
         return content
 
-    def blob(self, blob_name: str, bucket_name: str = 'mock_bucket'):
+    def blob(self, blob_name: str, bucket_name: str = 'mock_bucket') -> 'MockBlob':
         """
-        Returns a mock blob object.
-        This is a simplified mock, actual GCS client blob objects have more methods.
+        Returns a mock Blob object.
+
+        This is a simplified mock. Real GCS client Blob objects have many more methods.
+        This mock provides `exists()`, `upload_from_string()`, and `download_as_string()`.
+
+        Args:
+            blob_name (str): The name of the blob.
+            bucket_name (str, optional): The name of the bucket. Defaults to 'mock_bucket'.
+
+        Returns:
+            MockBlob: A mock Blob object associated with this client.
         """
-        # In a real GCS client, bucket.blob(blob_name) returns a Blob object.
-        # We'll mock this by returning an object that has an `exists()` method.
-        class MockBlob:
-            def __init__(self, client, full_path, blob_name, bucket_name):
-                self._client = client
-                self._full_path = full_path
-                self.name = blob_name
-                self.bucket = bucket_name # Mock bucket attribute
-
-            def exists(self):
-                return self._full_path in self._client._storage
-
-            def upload_from_string(self, data_string: str):
-                self._client.upload_blob_from_string(self.name, data_string, self.bucket)
-
-            def download_as_string(self) -> bytes:
-                # GCS download_as_string returns bytes, so we encode our string
-                return self._client.download_blob_to_string(self.name, self.bucket).encode('utf-8')
-
         full_path = self._get_full_path(blob_name, bucket_name)
         return MockBlob(self, full_path, blob_name, bucket_name)
 
-    def bucket(self, bucket_name: str):
+    def bucket(self, bucket_name: str) -> 'MockBucket':
         """
-        Returns a mock bucket object.
-        This is a simplified mock.
+        Returns a mock Bucket object.
+
+        This is a simplified mock. Real GCS client Bucket objects have more methods.
+        This mock mainly provides a `blob()` method to get a MockBlob object.
+
+        Args:
+            bucket_name (str): The name of the bucket.
+
+        Returns:
+            MockBucket: A mock Bucket object associated with this client.
         """
-        # In a real GCS client, client.bucket(bucket_name) returns a Bucket object.
-        # We'll mock this by returning an object that has a `blob()` method.
-        class MockBucket:
-            def __init__(self, client, name):
-                self._client = client
-                self.name = name
-
-            def blob(self, blob_name: str):
-                return self._client.blob(blob_name, self.name)
-
         return MockBucket(self, bucket_name)
 
+class MockBlob:
+    """
+    A mock GCS Blob object, providing a subset of `google.cloud.storage.Blob` methods.
+    """
+    def __init__(self, client: MockGCSClient, full_path: str, blob_name: str, bucket_name: str):
+        """
+        Initializes a MockBlob.
+
+        Args:
+            client (MockGCSClient): The mock client instance.
+            full_path (str): The full path used as a key in the client's storage.
+            blob_name (str): The name of this blob.
+            bucket_name (str): The name of the bucket this blob belongs to.
+        """
+        self._client = client
+        self._full_path = full_path
+        self.name = blob_name
+        self.bucket_name = bucket_name # Changed from self.bucket to self.bucket_name for clarity
+
+    def exists(self) -> bool:
+        """Checks if the blob exists in the mock client's storage."""
+        return self._full_path in self._client._storage
+
+    def upload_from_string(self, data_string: str):
+        """Simulates uploading string data to this blob."""
+        self._client.upload_blob_from_string(self.name, data_string, self.bucket_name)
+
+    def download_as_string(self) -> bytes:
+        """
+        Simulates downloading the blob's content as a UTF-8 encoded byte string.
+        Note: The actual GCS library method is `download_as_bytes()`.
+        This mock keeps `download_as_string` for consistency with its string-based storage
+        but returns bytes as the real API often does for this method name.
+        """
+        content_str = self._client.download_blob_to_string(self.name, self.bucket_name)
+        return content_str.encode('utf-8')
+
+class MockBucket:
+    """
+    A mock GCS Bucket object, providing a `blob()` method.
+    """
+    def __init__(self, client: MockGCSClient, name: str):
+        """
+        Initializes a MockBucket.
+
+        Args:
+            client (MockGCSClient): The mock client instance.
+            name (str): The name of this bucket.
+        """
+        self._client = client
+        self.name = name
+
+    def blob(self, blob_name: str) -> MockBlob:
+        """
+        Gets a MockBlob object for a blob within this bucket.
+
+        Args:
+            blob_name (str): The name of the blob.
+
+        Returns:
+            MockBlob: The MockBlob object.
+        """
+        return self._client.blob(blob_name, self.name)
+
+
 if __name__ == '__main__':
-    # Example Usage
+    # Ensure basic logging is configured if running standalone for testing
+    if not logging.getLogger().hasHandlers():
+        logging.basicConfig(level=logging.INFO)
+    logger_main = logging.getLogger(__name__) # Use a specific logger for __main__
+
+    logger_main.info("--- Testing MockGCSClient ---")
     mock_client = MockGCSClient()
 
-    # Simulate upload
+    # Test direct upload and download
     file_content = "This is a test presentation file."
     file_gcs_path = "presentations/test_presentation.txt"
     mock_client.upload_blob_from_string(file_gcs_path, file_content)
