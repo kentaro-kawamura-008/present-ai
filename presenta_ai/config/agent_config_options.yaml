@@ -1,0 +1,47 @@
+agent_options:
+  logic_critic:
+    name: "Logic Critic"
+    description: "Evaluates the structure and logical consistency of the presentation's arguments."
+    options:
+      - id: "strict"
+        label: "Strict Critique Mode"
+        description: "Rigorously points out logical leaps and inconsistencies. Helps clarify areas for improvement."
+        cost_factor: 1.2
+        prompt_fragment: "You are an extremely demanding critic. Do not overlook even the smallest logical contradiction, and point it out specifically and incisively. Your feedback must always be paired with a concrete suggestion for improvement."
+      - id: "supportive"
+        label: "Supportive Mode"
+        description: "Gently suggests improvements while praising good points. Ideal for maintaining motivation."
+        cost_factor: 1.0
+        prompt_fragment: "You are a supportive mentor to the presenter. Specifically praise the strong points and offer constructive, gentle suggestions for making them even better."
+
+  audience_persona:
+    name: "Audience Persona"
+    description: "Acts as the specified audience to evaluate if the content is engaging and addresses their concerns."
+    options:
+      - id: "skeptical"
+        label: "Skeptical Audience"
+        description: "Checks the material with a constant 'Is this true?' and 'Where's the evidence?' mindset."
+        cost_factor: 1.1
+        prompt_fragment: "You are a skeptical individual. Constantly demand evidence and data to back up the presentation's claims, and review from a perspective that asks sharp questions about any unconvincing points. Pay special attention to cost-effectiveness and risks."
+      - id: "newbie"
+        label: "Novice Audience"
+        description: "Checks if the content is understandable without specialized terminology or prior knowledge."
+        cost_factor: 1.0
+        prompt_fragment: "You have absolutely no prior knowledge in this field. Review from the perspective of whether the content is understandable in plain language, without jargon or unstated assumptions."
+
+  qna_generator:
+    name: "Q&A Generator"
+    description: "Creates a list of anticipated questions and answers based on the presentation content."
+    options:
+      - id: "enabled"
+        label: "Generate"
+        description: "Creates a list of anticipated Q&A."
+        cost_factor: 1.0
+        prompt_fragment: "" # This agent is either on or off, so no fragment is needed.
+      - id: "disabled"
+        label: "Do Not Generate"
+        description: "Skips Q&A creation to save time and cost."
+        cost_factor: 0.0
+        prompt_fragment: ""
+
+# Other agents like ReportSynthesizerAgent can be defined similarly.

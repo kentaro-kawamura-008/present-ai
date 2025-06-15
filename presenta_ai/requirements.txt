@@ -1,0 +1,6 @@
+streamlit
+pydantic
+pyyaml
+google-adk
+python-pptx
+PyMuPDF
