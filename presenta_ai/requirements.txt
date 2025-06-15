@@ -2,5 +2,4 @@ streamlit
 pydantic
 pyyaml
 google-adk
-python-pptx
-PyMuPDF
+google-cloud-aiplatform
