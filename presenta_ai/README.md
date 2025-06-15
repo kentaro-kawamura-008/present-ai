@@ -75,9 +75,12 @@ The behavior of the AI review agents (Logic Critic, Audience Persona, Q&A Genera
     ```
 5.  **Run the Streamlit Application**:
     ```bash
-    streamlit run app.py
+    streamlit run app.py  # Ensure you are in the 'presenta_ai' project root directory
     ```
     The application should open in your web browser (usually at `http://localhost:8501`).
+
+**Notes on Execution:**
+*   Ensure all imports within `presenta_ai/app.py` (especially for `utils` and `adk_logic` modules) resolve correctly. The application relies on these local modules. Issues with imports might trigger fallback error handling logic which should ideally not be encountered in a correct setup.
 
 ## How It Works (High-Level Flow)
 

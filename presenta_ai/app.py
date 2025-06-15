@@ -20,25 +20,27 @@ try:
 except ImportError as e:
     st.error(f"Failed to import necessary modules: {e}. Ensure 'presenta_ai' is in PYTHONPATH if running from a subdirectory.")
     # Minimal Fallback implementations for UI to partially load and show errors.
-    class MockGCSClient: # type: ignore
+    class MockGCSClient:
         def bucket(self, *args, **kwargs): return self
         def blob(self, *args, **kwargs): return self
         def upload_from_string(self, *args, **kwargs): st.warning("Dummy GCS Client: upload_from_string called.")
-    async def run_review_process(*args, **kwargs): # type: ignore
+    async def run_review_process(*args, **kwargs):
         st.warning("Dummy `run_review_process` active due to import error.")
-        return {
-            "error": "Backend not available due to import error.",
-            "final_report": { # Provide minimal structure for results display testing
-                "summary_review": "Dummy summary (ImportError).",
-                "storyline_review": "Dummy storyline (ImportError).",
-                "slide_by_slide_reviews": [],
-                "qna_list": []
-            }
-        }
-    def load_agent_config_options(): st.warning("Dummy `load_agent_config_options` active."); return {"agent_options": {}} # type: ignore
-    def get_agent_config_yaml_string(): st.warning("Dummy `get_agent_config_yaml_string` active."); return "dummy_yaml_content: {}" # type: ignore
-    def get_auto_compose_prompt(*args, **kwargs): st.warning("Dummy `get_auto_compose_prompt` active."); return "Dummy auto-compose prompt" # type: ignore
-    class MockVertexAIClient: # type: ignore
+        # Using dict() constructor for maximum explicitness to avoid parsing issues.
+        final_report_dummy = dict(
+            summary_review="Dummy summary (ImportError).",
+            storyline_review="Dummy storyline (ImportError).",
+            slide_by_slide_reviews=[],
+            qna_list=[]
+        )
+        return dict(
+            error="Backend not available due to import error.",
+            final_report=final_report_dummy
+        )
+    def load_agent_config_options(): st.warning("Dummy `load_agent_config_options` active."); return {"agent_options": {}}
+    def get_agent_config_yaml_string(): st.warning("Dummy `get_agent_config_yaml_string` active."); return "dummy_yaml_content: {}"
+    def get_auto_compose_prompt(*args, **kwargs): st.warning("Dummy `get_auto_compose_prompt` active."); return "Dummy auto-compose prompt"
+    class MockVertexAIClient:
         def generate_content(self, *args, **kwargs):
             st.warning("Dummy `MockVertexAIClient` for auto-compose active.")
             return type('DummyResponse', (), {'text': '{"logic_critic": "strict", "audience_persona": "skeptical", "qna_generator": "disabled"}'})()
